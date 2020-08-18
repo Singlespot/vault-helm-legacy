@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations: {}
+  labels:
+    app: debugging-tools
+  name: debugging-tools
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: debugging-tools
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: debugging-tools
+      annotations:
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/agent-inject-status: "update"
+        vault.hashicorp.com/agent-inject-secret-envrc: "secret/eks/test"
+        vault.hashicorp.com/agent-inject-template-envrc: |
+          {{ with secret "secret/eks/test" -}}
+            export USERNAME="{{ .Data.data.username }}"
+            export PASSWORD="{{ .Data.data.password }}"
+          {{- end }}
+        vault.hashicorp.com/role: "vault-role"
+        vault.hashicorp.com/auth-path: "auth/eks-dev"
+    spec:
+      serviceAccountName: vault-auth
+      containers:
+      - command: ["sh", "-ec"]
+        args: ["source /vault/secrets/envrc && env && tail -f /dev/null"]
+        image: armory/debugging-tools:latest
+        imagePullPolicy: Always
+        name: debugging-tools
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
