@@ -9,7 +9,7 @@ global:
   # imagePullSecrets:
   #   - name: image-pull-secret
   # TLS for end-to-end encrypted transport
-  tlsDisable: true
+  tlsDisable: false
   # Beta Feature: If deploying to OpenShift
   openshift: false
   # Create PodSecurityPolicy for pods
@@ -25,7 +25,7 @@ global:
 
 injector:
   # True if you want to enable vault agent injection.
-  enabled: true
+  enabled: false
 
   # External vault server address for the injector to use. Setting this will
   # disable deployment of a vault server along with the injector.
@@ -233,22 +233,28 @@ server:
 
   # extraEnvironmentVars is a list of extra enviroment variables to set with the stateful set. These could be
   # used to include variables required for auto-unseal.
-  extraEnvironmentVars: {}
+  extraEnvironmentVars:
+    VAULT_CACERT: /vault/userconfig/vault-server-tls/vault.ca
     # GOOGLE_REGION: global
     # GOOGLE_PROJECT: myproject
     # GOOGLE_APPLICATION_CREDENTIALS: /vault/userconfig/myproject/myproject-creds.json
 
   # extraSecretEnvironmentVars is a list of extra enviroment variables to set with the stateful set.
   # These variables take value from existing Secret objects.
-  extraSecretEnvironmentVars: []
-    # - envName: AWS_SECRET_ACCESS_KEY
-    #   secretName: vault
-    #   secretKey: AWS_SECRET_ACCESS_KEY
+  extraSecretEnvironmentVars:
+    - envName: AWS_ACCESS_KEY_ID
+      secretName: eks-creds
+      secretKey: AWS_ACCESS_KEY_ID
+    - envName: AWS_SECRET_ACCESS_KEY
+      secretName: eks-creds
+      secretKey: AWS_SECRET_ACCESS_KEY
 
   # extraVolumes is a list of extra volumes to mount. These will be exposed
   # to Vault in the path `/vault/userconfig/<name>/`. The value below is
   # an array of objects, examples are shown below.
-  extraVolumes: []
+  extraVolumes:
+    - type: secret
+      name: vault-server-tls
     # - type: secret (or "configMap")
     #   name: my-secret
     #   path: null # default is `/vault/userconfig`
@@ -319,7 +325,7 @@ server:
 
     # Configures the service type for the main Vault service.  Can be ClusterIP
     # or NodePort.
-    #type: ClusterIP
+    #type: LoadBalancer
 
     # If type is set to "NodePort", a specific nodePort value can be configured,
     # will be random if left blank.
@@ -332,7 +338,9 @@ server:
     # Extra annotations for the service definition. This can either be YAML or a
     # YAML-formatted multi-line templated string map of the annotations to apply
     # to the service.
-    annotations: {}
+    annotations:
+      service.beta.kubernetes.io/aws-load-balancer-backend-protocol: ssl
+      # service.beta.kubernetes.io/aws-load-balancer-ssl-cert: arn:aws:acm:eu-west-1:268324876595:certificate/d65266d3-b4ab-43da-b35d-c75681ee6371
 
   # This configures the Vault Statefulset to create a PVC for data
   # storage when using the file or raft backend storage engines.
@@ -414,7 +422,7 @@ server:
   # Helm project by default.  It is possible to manually configure Vault to use a
   # different HA backend.
   ha:
-    enabled: false
+    enabled: true
     replicas: 3
 
     # Set the api_addr configuration for Vault HA
@@ -463,11 +471,18 @@ server:
     config: |
       ui = true
 
+      # tls_cert_file = "/vault/userconfig/vault-server-tls/vault.crt"
+      # tls_key_file  = "/vault/userconfig/vault-server-tls/vault.key"
+      # tls_client_ca_file = "/vault/userconfig/vault-server-tls/vault.ca"
+
       listener "tcp" {
-        tls_disable = 1
         address = "[::]:8200"
         cluster_address = "[::]:8201"
+        tls_disable = 0
+        tls_cert_file = "/vault/userconfig/vault-server-tls/fullchain.pem"
+        tls_key_file  = "/vault/userconfig/vault-server-tls/privkey.pem"
       }
+
       storage "consul" {
         path = "vault"
         address = "HOST_IP:8500"
@@ -475,15 +490,10 @@ server:
 
       service_registration "kubernetes" {}
 
-      # Example configuration for using auto-unseal, using Google Cloud KMS. The
-      # GKMS keys must already exist, and the cluster must have a service account
-      # that is authorized to access GCP KMS.
-      #seal "gcpckms" {
-      #   project     = "vault-helm-dev-246514"
-      #   region      = "global"
-      #   key_ring    = "vault-helm-unseal-kr"
-      #   crypto_key  = "vault-helm-unseal-key"
-      #}
+      seal "awskms" {
+        region     = "eu-west-1"
+        kms_key_id = "3b733d17-9344-4afe-8ca6-46aa424cc40f"
+      }
 
     # A disruption budget limits the number of pods of a replicated application
     # that are down simultaneously from voluntary disruptions
@@ -515,10 +525,10 @@ ui:
   # serviceType can be used to control the type of service created. For
   # example, setting this to "LoadBalancer" will create an external load
   # balancer (for supported K8S installations) to access the UI.
-  enabled: false
-  serviceType: "ClusterIP"
+  enabled: true
+  serviceType: "LoadBalancer"
   serviceNodePort: null
-  externalPort: 8200
+  externalPort: 443
 
   # loadBalancerSourceRanges:
   #   - 10.0.0.0/16
@@ -529,4 +539,6 @@ ui:
   # Extra annotations to attach to the ui service
   # This can either be YAML or a YAML-formatted multi-line templated string map
   # of the annotations to apply to the ui service
-  annotations: {}
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-backend-protocol: ssl
+    external-dns.alpha.kubernetes.io/hostname: vault.singlespot.com
