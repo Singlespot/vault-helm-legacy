@@ -1,0 +1,13 @@
+{{- if .Values.server.letsencrypt.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: vault-letsencrypt
+  namespace: {{ .Release.Namespace }}
+spec:
+  resources:
+    requests:
+      storage: {{ .Values.server.letsencrypt.volumeSize }}
+  accessModes: [ "ReadWriteOnce" ]
+  storageClassName: "gp2"
+{{- end }}

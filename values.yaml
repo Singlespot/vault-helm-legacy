@@ -300,7 +300,7 @@ server:
   # extraEnvironmentVars is a list of extra environment variables to set with the stateful set. These could be
   # used to include variables required for auto-unseal.
   extraEnvironmentVars:
-    VAULT_CACERT: /vault/userconfig/vault-server-tls/vault.ca
+    VAULT_CACERT: /vault/userconfig/vault-ca/vault.ca
     # GOOGLE_REGION: global
     # GOOGLE_PROJECT: myproject
     # GOOGLE_APPLICATION_CREDENTIALS: /vault/userconfig/myproject/myproject-creds.json
@@ -320,7 +320,7 @@ server:
   # an array of objects, examples are shown below.
   extraVolumes:
     - type: secret
-      name: vault-server-tls
+      name: vault-ca
     # - type: secret (or "configMap")
     #   name: my-secret
     #   path: null # default is `/vault/userconfig`
@@ -557,19 +557,15 @@ server:
     # such as passwords should be either mounted through extraSecretEnvironmentVars
     # or through a Kube secret.  For more information see:
     # https://www.vaultproject.io/docs/platform/k8s/helm/run#protecting-sensitive-vault-configurations
+    #        tls_cert_file = "/vault/userconfig/vault-server-tls/fullchain.pem"
+    #        tls_key_file  = "/vault/userconfig/vault-server-tls/privkey.pem"
     config: |
       ui = true
-
-      # tls_cert_file = "/vault/userconfig/vault-server-tls/vault.crt"
-      # tls_key_file  = "/vault/userconfig/vault-server-tls/vault.key"
-      # tls_client_ca_file = "/vault/userconfig/vault-server-tls/vault.ca"
 
       listener "tcp" {
         address = "[::]:8200"
         cluster_address = "[::]:8201"
-        tls_disable = 0
-        tls_cert_file = "/vault/userconfig/vault-server-tls/fullchain.pem"
-        tls_key_file  = "/vault/userconfig/vault-server-tls/privkey.pem"
+        tls_disable = 1
       }
 
       storage "consul" {
@@ -614,6 +610,10 @@ server:
     # to the statefulSet.
     annotations: {}
 
+  letsencrypt:
+    enabled: true
+    volumeSize: 1Gi
+
 # Vault UI
 ui:
   # True if you want to create a Service entry for the Vault UI.
@@ -637,4 +637,4 @@ ui:
   # of the annotations to apply to the ui service
   annotations:
     service.beta.kubernetes.io/aws-load-balancer-backend-protocol: ssl
-    external-dns.alpha.kubernetes.io/hostname: vault.singlespot.com
+    external-dns.alpha.kubernetes.io/hostname: vault-dev.singlespot.com

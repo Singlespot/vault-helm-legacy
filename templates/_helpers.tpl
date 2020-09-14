@@ -88,6 +88,12 @@ extra volumes the user may have specified (such as a secret with TLS).
           configMap:
             name: {{ template "vault.fullname" . }}-config
   {{ end }}
+  {{- if .Values.server.letsencrypt.enabled }}
+        - name: letsencrypt-ovhapi
+          secret:
+            secretName: letsencrypt-ovhapi
+            defaultMode: 256
+  {{- end }}
   {{- range .Values.server.extraVolumes }}
         - name: userconfig-{{ .name }}
           {{ .type }}:
@@ -156,6 +162,11 @@ based on the mode configured.
             - name: config
               mountPath: /vault/config
   {{ end }}
+  {{ if eq (.Values.server.letsencrypt.enabled | toString) "true" }}
+            - name: vault-letsencrypt
+              mountPath: /vault/userconfig/letsencrypt
+              readOnly: true
+  {{ end }}
   {{- range .Values.server.extraVolumes }}
             - name: userconfig-{{ .name }}
               readOnly: true
@@ -172,7 +183,7 @@ might not use data storage since Consul is likely it's backend, however, audit
 storage might be desired by the user.
 */}}
 {{- define "vault.volumeclaims" -}}
-  {{- if and (ne .mode "dev") (or .Values.server.dataStorage.enabled .Values.server.auditStorage.enabled) }}
+  {{- if and (ne .mode "dev") (or .Values.server.dataStorage.enabled .Values.server.auditStorage.enabled .Values.server.letsencrypt.enabled) }}
   volumeClaimTemplates:
       {{- if and (eq (.Values.server.dataStorage.enabled | toString) "true") (or (eq .mode "standalone") (eq (.Values.server.ha.raft.enabled | toString ) "true" )) }}
     - metadata:
