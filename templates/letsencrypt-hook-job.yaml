@@ -1,0 +1,81 @@
+{{ template "vault.mode" . }}
+{{- if ne .mode "external" }}
+{{- if and (ne .mode "") (and (eq (.Values.global.enabled | toString) "true") (eq (.Values.server.authDelegator.enabled | toString) "true") (eq (.Values.server.letsencrypt.enabled | toString) "true")) }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Release.Name }}-letsencrypt-hook
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: {{ include "vault.name" . }}-letsencrypt-hook
+    app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
+    app.kubernetes.io/instance: {{ .Release.Name | quote }}
+    app.kubernetes.io/version: {{ .Chart.AppVersion }}
+    helm.sh/chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+  annotations:
+    # This is what defines this resource as a hook. Without this line, the
+    # job is considered part of the release.
+    "helm.sh/hook": pre-upgrade
+{{/*    "helm.sh/hook": pre-install*/}}
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  template:
+    metadata:
+      name: {{ .Release.Name }}-letsencrypt-hook
+      labels:
+        app.kubernetes.io/name: {{ include "vault.name" . }}-letsencrypt-hook
+        app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
+        app.kubernetes.io/instance: {{ .Release.Name | quote }}
+        helm.sh/chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    spec:
+      serviceAccountName: {{ template "vault.fullname" . }}
+      containers:
+      - name: create-certificate-secret
+        image: certbot/dns-ovh:v1.8.0
+        imagePullPolicy: {{ .Values.server.image.pullPolicy }}
+        command:
+          - /bin/sh
+          - '-ec'
+        args:
+          - >
+            pip install --upgrade pip;
+            pip install kubernetes;
+            certbot certonly --test-cert -m admin@singlespot.com --agree-tos --dns-ovh --dns-ovh-credentials \
+              /root/config/ovh.ini -d {{ index .Values.ui.annotations "external-dns.alpha.kubernetes.io/hostname" }} \
+              --rsa-key-size 4096 --config-dir {{ .Values.server.letsencrypt.baseDir }}/config --work-dir \
+              {{ .Values.server.letsencrypt.baseDir }}/work --logs-dir {{ .Values.server.letsencrypt.baseDir }}/logs \
+              --non-interactive;
+            python /root/script/create_cert_secret.py
+        env:
+          - name: NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          - name: SECRET_NAME
+            value: {{ .Values.server.letsencrypt.secretName }}
+          - name: CERT_DIR
+            value: {{ .Values.server.letsencrypt.baseDir }}/config/live/{{ index .Values.ui.annotations "external-dns.alpha.kubernetes.io/hostname" }}
+        volumeMounts:
+          - name: letsencrypt-script
+            mountPath: /root/script/
+          - name: letsencrypt-ovhapi
+            readOnly: true
+            mountPath: /root/config/
+          - name: vault-letsencrypt
+            mountPath: {{ .Values.server.letsencrypt.baseDir }}
+      volumes:
+        - name: letsencrypt-script
+          configMap:
+            name: {{ template "vault.fullname" . }}-letsencrypt-create-certificate-script
+        - name: letsencrypt-ovhapi
+          secret:
+            secretName: letsencrypt-ovhapi
+            defaultMode: 256
+        - name: vault-letsencrypt
+          persistentVolumeClaim:
+            claimName: vault-letsencrypt
+      restartPolicy: Never
+      terminationGracePeriodSeconds: 10
+{{- end }}
+{{- end }}
