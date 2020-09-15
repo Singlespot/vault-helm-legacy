@@ -89,10 +89,9 @@ extra volumes the user may have specified (such as a secret with TLS).
             name: {{ template "vault.fullname" . }}-config
   {{ end }}
   {{- if .Values.server.letsencrypt.enabled }}
-        - name: letsencrypt-ovhapi
+        - name: userconfig-{{ .Values.server.letsencrypt.secretName }}
           secret:
-            secretName: letsencrypt-ovhapi
-            defaultMode: 256
+            secretName: {{ .Values.server.letsencrypt.secretName }}
   {{- end }}
   {{- range .Values.server.extraVolumes }}
         - name: userconfig-{{ .name }}
@@ -165,8 +164,8 @@ based on the mode configured.
               mountPath: /vault/config
   {{ end }}
   {{ if eq (.Values.server.letsencrypt.enabled | toString) "true" }}
-            - name: vault-letsencrypt
-              mountPath: /vault/userconfig/letsencrypt
+            - name: userconfig-{{ .Values.server.letsencrypt.secretName }}
+              mountPath: /vault/userconfig/{{ .Values.server.letsencrypt.secretName }}
               readOnly: true
   {{ end }}
   {{- range .Values.server.extraVolumes }}

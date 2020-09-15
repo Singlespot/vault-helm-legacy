@@ -1,4 +1,6 @@
-{{- if .Values.server.letsencrypt.enabled }}
+{{ template "vault.mode" . }}
+{{- if ne .mode "external" }}
+{{- if and (ne .mode "") (and (eq (.Values.global.enabled | toString) "true") (eq (.Values.server.authDelegator.enabled | toString) "true") (eq (.Values.server.letsencrypt.enabled | toString) "true")) }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -10,4 +12,5 @@ spec:
       storage: {{ .Values.server.letsencrypt.volumeSize }}
   accessModes: [ "ReadWriteOnce" ]
   storageClassName: "gp2"
+{{- end }}
 {{- end }}
