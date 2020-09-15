@@ -1,5 +1,6 @@
 {{ template "vault.mode" . }}
-{{- if false }}
+{{- if ne .mode "external" }}
+{{- if and (ne .mode "") (and (eq (.Values.global.enabled | toString) "true") (eq (.Values.server.authDelegator.enabled | toString) "true") (eq (.Values.server.letsencrypt.enabled | toString) "true")) }}
 apiVersion: batch/v1beta1
 kind: CronJob
 metadata:
@@ -11,14 +12,14 @@ metadata:
     app.kubernetes.io/managed-by: {{ .Release.Service }}
   {{- template "vault.statefulSet.annotations" . }}
 spec:
-  schedule: '*/1 * * * *'
+  schedule: '*/5 * * * *'
   jobTemplate:
     metadata:
       labels:
         helm.sh/chart: {{ template "vault.chart" . }}
         app.kubernetes.io/name: {{ template "vault.name" . }}-letsencrypt-cronjob
         app.kubernetes.io/instance: {{ .Release.Name }}
-        component: server
+        component: letsencrypt
         {{- if  .Values.server.extraLabels -}}
           {{- toYaml .Values.server.extraLabels | nindent 8 -}}
         {{- end -}}
@@ -36,36 +37,9 @@ spec:
               secret:
                 secretName: letsencrypt-ovhapi
                 defaultMode: 256
-          initContainers:
-            - name: letsencrypt-cronjob-init
-              image: certbot/dns-ovh:v1.8.0
-              imagePullPolicy: {{ .Values.server.image.pullPolicy }}
-              command:
-                - /bin/sh
-                - '-ec'
-              args:
-                - >
-                  echo "USER";
-                  echo $USER;
-                  id;
-                  echo $HOME;
-                  echo "pwd";
-                  pwd;
-                  pip install --upgrade pip;
-                  pip install kubernetes;
-                  mkdir /opt/letsencrypt;
-                  certbot certonly --dry-run -m admin@singlespot.com --agree-tos --dns-ovh --dns-ovh-credentials \
-                    /root/config/ovh.ini -d vault-dev.singlespot.com --rsa-key-size 4096 --config-dir \
-                    /opt/letsencrypt/config --work-dir /opt/letsencrypt/work --logs-dir /opt/letsencrypt/logs \
-                    --non-interactive;
-                  python /root/script/create_cert_secret.py
-              env: []
-              volumeMounts:
-                - name: letsencrypt-script
-                  mountPath: /root/script/
-                - name: letsencrypt-ovhapi
-                  readOnly: true
-                  mountPath: /root/config/
+            - name: vault-letsencrypt
+              persistentVolumeClaim:
+                claimName: vault-letsencrypt
           containers:
             - name: letsencrypt-cronjob
               image: certbot/dns-ovh:v1.8.0
@@ -75,9 +49,14 @@ spec:
                 - '-ec'
               args:
                 - >
-                  echo "USER";
-                  echo $USER;
-                  id
+                  pip install --upgrade pip;
+                  pip install kubernetes;
+                  certbot renew --test-cert -m admin@singlespot.com --agree-tos --dns-ovh --dns-ovh-credentials \
+                    /root/config/ovh.ini -d {{ index .Values.ui.annotations "external-dns.alpha.kubernetes.io/hostname" }} \
+                    --rsa-key-size 4096 --config-dir {{ .Values.server.letsencrypt.baseDir }}/config --work-dir \
+                    {{ .Values.server.letsencrypt.baseDir }}/work --logs-dir {{ .Values.server.letsencrypt.baseDir }}/logs \
+                    --non-interactive;
+                  python /root/script/create_cert_secret.py
               env: []
               volumeMounts:
                 - name: letsencrypt-script
@@ -85,4 +64,7 @@ spec:
                 - name: letsencrypt-ovhapi
                   readOnly: true
                   mountPath: /root/script/
-{{ end }}
+                - name: vault-letsencrypt
+                  mountPath: {{ .Values.server.letsencrypt.baseDir }}
+{{- end }}
+{{- end }}
