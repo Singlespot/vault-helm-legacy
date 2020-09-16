@@ -309,13 +309,18 @@ Sets extra ui service annotations
 Sets extra service account annotations
 */}}
 {{- define "vault.serviceAccount.annotations" -}}
-  {{- if and (ne .mode "dev") .Values.server.serviceAccount.annotations }}
+  {{- if and (ne .mode "dev") (or .Values.server.serviceAccount.annotations .Values.server.letsencrypt.enabled) }}
   annotations:
     {{- $tp := typeOf .Values.server.serviceAccount.annotations }}
     {{- if eq $tp "string" }}
       {{- tpl .Values.server.serviceAccount.annotations . | nindent 4 }}
     {{- else }}
       {{- toYaml .Values.server.serviceAccount.annotations | nindent 4 }}
+    {{- end }}
+    {{- if .Values.server.letsencrypt.enabled }}
+      "helm.sh/hook": pre-install
+      "helm.sh/hook-weight": "-10"
+      "helm.sh/hook-delete-policy": before-hook-creation
     {{- end }}
   {{- end }}
 {{- end -}}
