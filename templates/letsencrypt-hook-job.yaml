@@ -15,8 +15,7 @@ metadata:
   annotations:
     # This is what defines this resource as a hook. Without this line, the
     # job is considered part of the release.
-    "helm.sh/hook": pre-upgrade
-{{/*    "helm.sh/hook": pre-install*/}}
+    "helm.sh/hook": pre-install
     "helm.sh/hook-weight": "-5"
     "helm.sh/hook-delete-policy": hook-succeeded
 spec:
@@ -41,7 +40,7 @@ spec:
           - >
             pip install --upgrade pip;
             pip install kubernetes;
-            certbot certonly --test-cert -m admin@singlespot.com --agree-tos --dns-ovh --dns-ovh-credentials \
+            certbot certonly -m admin@singlespot.com --agree-tos --dns-ovh --dns-ovh-credentials \
               /root/config/ovh.ini -d {{ index .Values.ui.annotations "external-dns.alpha.kubernetes.io/hostname" }} \
               --rsa-key-size 4096 --config-dir {{ .Values.server.letsencrypt.baseDir }}/config --work-dir \
               {{ .Values.server.letsencrypt.baseDir }}/work --logs-dir {{ .Values.server.letsencrypt.baseDir }}/logs \

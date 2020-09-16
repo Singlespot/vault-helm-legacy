@@ -6,6 +6,12 @@ kind: PersistentVolumeClaim
 metadata:
   name: vault-letsencrypt
   namespace: {{ .Release.Namespace }}
+  annotations:
+    # This is what defines this resource as a hook. Without this line, the
+    # job is considered part of the release.
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "-10"
+    "helm.sh/hook-delete-policy": before-hook-creation
 spec:
   resources:
     requests:

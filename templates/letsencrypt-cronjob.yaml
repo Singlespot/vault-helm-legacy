@@ -12,7 +12,7 @@ metadata:
     app.kubernetes.io/managed-by: {{ .Release.Service }}
   {{- template "vault.statefulSet.annotations" . }}
 spec:
-  schedule: '*/5 * * * *'
+  schedule: '* * 1 * *'
   jobTemplate:
     metadata:
       labels:
@@ -51,19 +51,28 @@ spec:
                 - >
                   pip install --upgrade pip;
                   pip install kubernetes;
-                  certbot renew --test-cert -m admin@singlespot.com --agree-tos --dns-ovh --dns-ovh-credentials \
+                  certbot certonly -m admin@singlespot.com --agree-tos --dns-ovh --dns-ovh-credentials \
                     /root/config/ovh.ini -d {{ index .Values.ui.annotations "external-dns.alpha.kubernetes.io/hostname" }} \
                     --rsa-key-size 4096 --config-dir {{ .Values.server.letsencrypt.baseDir }}/config --work-dir \
                     {{ .Values.server.letsencrypt.baseDir }}/work --logs-dir {{ .Values.server.letsencrypt.baseDir }}/logs \
                     --non-interactive;
                   python /root/script/create_cert_secret.py
-              env: []
+              env:
+                - name: NAMESPACE
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.namespace
+                - name: SECRET_NAME
+                  value: {{ .Values.server.letsencrypt.secretName }}
+                - name: CERT_DIR
+                  value: {{ .Values.server.letsencrypt.baseDir }}/config/live/{{ index .Values.ui.annotations "external-dns.alpha.kubernetes.io/hostname" }}
               volumeMounts:
                 - name: letsencrypt-script
-                  mountPath: /root/config/
-                - name: letsencrypt-ovhapi
                   readOnly: true
                   mountPath: /root/script/
+                - name: letsencrypt-ovhapi
+                  readOnly: true
+                  mountPath: /root/config/
                 - name: vault-letsencrypt
                   mountPath: {{ .Values.server.letsencrypt.baseDir }}
 {{- end }}
