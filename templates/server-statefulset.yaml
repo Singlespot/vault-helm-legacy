@@ -69,36 +69,6 @@ spec:
 {{/*      {{- if or (.Values.server.letsencrypt.enabled) (.Values.server.extraInitContainers) }}*/}}
       {{- if .Values.server.extraInitContainers }}
       initContainers:
-{{/*        {{- if .Values.server.letsencrypt.enabled }}*/}}
-{{/*        - name: letsencrypt-init*/}}
-{{/*          image: certbot/dns-ovh:v1.8.0*/}}
-{{/*          imagePullPolicy: {{ .Values.server.image.pullPolicy }}*/}}
-{{/*          command:*/}}
-{{/*            - /bin/sh*/}}
-{{/*            - '-ec'*/}}
-{{/*          args:*/}}
-{{/*            - >*/}}
-{{/*              echo "USER";*/}}
-{{/*              echo $USER;*/}}
-{{/*              id;*/}}
-{{/*              echo $HOME;*/}}
-{{/*              echo "pwd";*/}}
-{{/*              pwd;*/}}
-{{/*              pip install --upgrade pip;*/}}
-{{/*              pip install kubernetes;*/}}
-{{/*              mkdir /opt/letsencrypt;*/}}
-{{/*              certbot certonly -m admin@singlespot.com --agree-tos --dns-ovh --dns-ovh-credentials /root/config/ovh.ini \*/}}
-{{/*                -d vault-dev.singlespot.com --rsa-key-size 4096 --config-dir /opt/letsencrypt/config \*/}}
-{{/*                --work-dir /opt/letsencrypt/work --logs-dir /opt/letsencrypt/logs --non-interactive;*/}}
-{{/*              python /root/script/create_cert_secret.py*/}}
-{{/*          env: []*/}}
-{{/*          volumeMounts:*/}}
-{{/*            - name: letsencrypt-script*/}}
-{{/*              mountPath: /root/config/*/}}
-{{/*            - name: letsencrypt-ovhapi*/}}
-{{/*              readOnly: true*/}}
-{{/*              mountPath: /root/script/*/}}
-{{/*        {{- end }}*/}}
         {{- if .Values.server.extraInitContainers }}
         {{ toYaml .Values.server.extraInitContainers | nindent 8}}
         {{- end }}
