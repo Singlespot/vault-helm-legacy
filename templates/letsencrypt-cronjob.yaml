@@ -28,7 +28,7 @@ spec:
       template:
         spec:
           restartPolicy: Never
-          serviceAccountName: {{ template "vault.fullname" . }}
+          serviceAccountName: {{ template "vault.serviceAccount.name" . }}
           volumes:
             - name: letsencrypt-script
               configMap:

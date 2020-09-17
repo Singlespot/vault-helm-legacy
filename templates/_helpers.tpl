@@ -189,6 +189,7 @@ storage might be desired by the user.
       {{- if and (eq (.Values.server.dataStorage.enabled | toString) "true") (or (eq .mode "standalone") (eq (.Values.server.ha.raft.enabled | toString ) "true" )) }}
     - metadata:
         name: data
+        {{- include "vault.dataVolumeClaim.annotations" . | nindent 6 }}
       spec:
         accessModes:
           - {{ .Values.server.dataStorage.accessMode | default "ReadWriteOnce" }}
@@ -202,6 +203,7 @@ storage might be desired by the user.
       {{- if eq (.Values.server.auditStorage.enabled | toString) "true" }}
     - metadata:
         name: audit
+        {{- include "vault.auditVolumeClaim.annotations" . | nindent 6 }}
       spec:
         accessModes:
           - {{ .Values.server.auditStorage.accessMode | default "ReadWriteOnce" }}
@@ -279,7 +281,7 @@ Sets the injector node selector for pod placement
 Sets extra pod annotations
 */}}
 {{- define "vault.annotations" -}}
-  {{- if and (ne .mode "dev") .Values.server.annotations }}
+  {{- if .Values.server.annotations }}
       annotations:
         {{- $tp := typeOf .Values.server.annotations }}
         {{- if eq $tp "string" }}
@@ -303,6 +305,17 @@ Sets extra ui service annotations
       {{- toYaml .Values.ui.annotations | nindent 4 }}
     {{- end }}
   {{- end }}
+{{- end -}}
+
+{{/*
+Create the name of the service account to use
+*/}}
+{{- define "vault.serviceAccount.name" -}}
+{{- if .Values.server.serviceAccount.create -}}
+    {{ default (include "vault.fullname" .) .Values.server.serviceAccount.name }}
+{{- else -}}
+    {{ default "default" .Values.server.serviceAccount.name }}
+{{- end -}}
 {{- end -}}
 
 {{/*
@@ -397,6 +410,36 @@ Sets extra statefulset annotations
       {{- tpl .Values.server.statefulSet.annotations . | nindent 4 }}
     {{- else }}
       {{- toYaml .Values.server.statefulSet.annotations | nindent 4 }}
+    {{- end }}
+  {{- end }}
+{{- end -}}
+
+{{/*
+Sets VolumeClaim annotations for data volume
+*/}}
+{{- define "vault.dataVolumeClaim.annotations" -}}
+  {{- if and (ne .mode "dev") (.Values.server.dataStorage.enabled) (.Values.server.dataStorage.annotations) }}
+  annotations:
+    {{- $tp := typeOf .Values.server.dataStorage.annotations }}
+    {{- if eq $tp "string" }}
+      {{- tpl .Values.server.dataStorage.annotations . | nindent 4 }}
+    {{- else }}
+      {{- toYaml .Values.server.dataStorage.annotations | nindent 4 }}
+    {{- end }}
+  {{- end }}
+{{- end -}}
+
+{{/*
+Sets VolumeClaim annotations for audit volume
+*/}}
+{{- define "vault.auditVolumeClaim.annotations" -}}
+  {{- if and (ne .mode "dev") (.Values.server.auditStorage.enabled) (.Values.server.auditStorage.annotations) }}
+  annotations:
+    {{- $tp := typeOf .Values.server.auditStorage.annotations }}
+    {{- if eq $tp "string" }}
+      {{- tpl .Values.server.auditStorage.annotations . | nindent 4 }}
+    {{- else }}
+      {{- toYaml .Values.server.auditStorage.annotations | nindent 4 }}
     {{- end }}
   {{- end }}
 {{- end -}}
