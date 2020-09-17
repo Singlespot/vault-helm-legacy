@@ -1,0 +1,51 @@
+{{ template "vault.mode" . }}
+{{- if ne .mode "external" }}
+{{- if and (ne .mode "") (and (eq (.Values.global.enabled | toString) "true") (eq (.Values.server.authDelegator.enabled | toString) "true") (eq (.Values.server.letsencrypt.enabled | toString) "true")) }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ template "vault.fullname" . }}-letsencrypt-create-certificate-script
+  namespace: {{ .Release.Namespace }}
+  labels:
+    helm.sh/chart: {{ include "vault.chart" . }}
+    app.kubernetes.io/name: {{ include "vault.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+  annotations:
+    # This is what defines this resource as a hook. Without this line, the
+    # job is considered part of the release.
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "-10"
+    "helm.sh/hook-delete-policy": before-hook-creation
+data:
+  create_cert_secret.py: |-
+    import base64
+    import os
+    from kubernetes import client, config
+
+
+    def main():
+        config.load_incluster_config()
+        v1 = client.CoreV1Api()
+        SECRET_NAME = os.environ['SECRET_NAME']
+        NAMESPACE = os.environ['NAMESPACE']
+        CERT_DIR = os.environ['CERT_DIR']
+        metadata = {'name': SECRET_NAME, 'namespace': NAMESPACE}
+        with open(os.path.join(CERT_DIR, 'fullchain.pem'), 'rb') as f:
+            crt = base64.b64encode(f.read()).decode()
+        with open(os.path.join(CERT_DIR, 'privkey.pem'), 'rb') as f:
+            key = base64.b64encode(f.read()).decode()
+        data = {'tls.crt': crt, 'tls.key': key}
+        api_version = 'v1'
+        kind = 'Secret'
+        body = client.V1Secret(api_version, data, kind, metadata, type='kubernetes.io/tls')
+        try:
+            api_response = v1.create_namespaced_secret(NAMESPACE, body)
+        except Exception:  # Conflict
+            api_response = v1.patch_namespaced_secret(SECRET_NAME, NAMESPACE, body)
+
+
+    if __name__ == '__main__':
+        main()
+{{- end }}
+{{- end }}

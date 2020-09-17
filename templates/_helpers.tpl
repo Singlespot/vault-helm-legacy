@@ -88,6 +88,11 @@ extra volumes the user may have specified (such as a secret with TLS).
           configMap:
             name: {{ template "vault.fullname" . }}-config
   {{ end }}
+  {{- if .Values.server.letsencrypt.enabled }}
+        - name: userconfig-{{ .Values.server.letsencrypt.secretName }}
+          secret:
+            secretName: {{ .Values.server.letsencrypt.secretName }}
+  {{- end }}
   {{- range .Values.server.extraVolumes }}
         - name: userconfig-{{ .name }}
           {{ .type }}:
@@ -158,6 +163,11 @@ based on the mode configured.
             - name: config
               mountPath: /vault/config
   {{ end }}
+  {{ if eq (.Values.server.letsencrypt.enabled | toString) "true" }}
+            - name: userconfig-{{ .Values.server.letsencrypt.secretName }}
+              mountPath: /vault/userconfig/{{ .Values.server.letsencrypt.secretName }}
+              readOnly: true
+  {{ end }}
   {{- range .Values.server.extraVolumes }}
             - name: userconfig-{{ .name }}
               readOnly: true
@@ -174,7 +184,7 @@ might not use data storage since Consul is likely it's backend, however, audit
 storage might be desired by the user.
 */}}
 {{- define "vault.volumeclaims" -}}
-  {{- if and (ne .mode "dev") (or .Values.server.dataStorage.enabled .Values.server.auditStorage.enabled) }}
+  {{- if and (ne .mode "dev") (or .Values.server.dataStorage.enabled .Values.server.auditStorage.enabled .Values.server.letsencrypt.enabled) }}
   volumeClaimTemplates:
       {{- if and (eq (.Values.server.dataStorage.enabled | toString) "true") (or (eq .mode "standalone") (eq (.Values.server.ha.raft.enabled | toString ) "true" )) }}
     - metadata:
@@ -299,13 +309,20 @@ Sets extra ui service annotations
 Sets extra service account annotations
 */}}
 {{- define "vault.serviceAccount.annotations" -}}
-  {{- if and (ne .mode "dev") .Values.server.serviceAccount.annotations }}
+  {{- if and (ne .mode "dev") (or .Values.server.serviceAccount.annotations .Values.server.letsencrypt.enabled) }}
   annotations:
-    {{- $tp := typeOf .Values.server.serviceAccount.annotations }}
-    {{- if eq $tp "string" }}
-      {{- tpl .Values.server.serviceAccount.annotations . | nindent 4 }}
-    {{- else }}
-      {{- toYaml .Values.server.serviceAccount.annotations | nindent 4 }}
+    {{- if .Values.server.serviceAccount.annotations }}
+      {{- $tp := typeOf .Values.server.serviceAccount.annotations }}
+      {{- if eq $tp "string" }}
+        {{- tpl .Values.server.serviceAccount.annotations . | nindent 4 }}
+      {{- else }}
+        {{- toYaml .Values.server.serviceAccount.annotations | nindent 4 }}
+      {{- end }}
+    {{- end }}
+    {{- if .Values.server.letsencrypt.enabled }}
+      "helm.sh/hook": pre-install
+      "helm.sh/hook-weight": "-10"
+      "helm.sh/hook-delete-policy": before-hook-creation
     {{- end }}
   {{- end }}
 {{- end -}}
