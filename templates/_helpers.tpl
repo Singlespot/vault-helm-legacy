@@ -311,11 +311,13 @@ Sets extra service account annotations
 {{- define "vault.serviceAccount.annotations" -}}
   {{- if and (ne .mode "dev") (or .Values.server.serviceAccount.annotations .Values.server.letsencrypt.enabled) }}
   annotations:
-    {{- $tp := typeOf .Values.server.serviceAccount.annotations }}
-    {{- if eq $tp "string" }}
-      {{- tpl .Values.server.serviceAccount.annotations . | nindent 4 }}
-    {{- else }}
-      {{- toYaml .Values.server.serviceAccount.annotations | nindent 4 }}
+    {{- if .Values.server.serviceAccount.annotations }}
+      {{- $tp := typeOf .Values.server.serviceAccount.annotations }}
+      {{- if eq $tp "string" }}
+        {{- tpl .Values.server.serviceAccount.annotations . | nindent 4 }}
+      {{- else }}
+        {{- toYaml .Values.server.serviceAccount.annotations | nindent 4 }}
+      {{- end }}
     {{- end }}
     {{- if .Values.server.letsencrypt.enabled }}
       "helm.sh/hook": pre-install

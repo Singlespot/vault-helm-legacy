@@ -233,8 +233,8 @@ server:
 
   # extraEnvironmentVars is a list of extra enviroment variables to set with the stateful set. These could be
   # used to include variables required for auto-unseal.
-  extraEnvironmentVars: {}
-#    VAULT_CACERT: /vault/userconfig/vault-ca/vault.ca
+  extraEnvironmentVars:
+    VAULT_CACERT: /vault/userconfig/vault-ca/vault.ca
     # GOOGLE_REGION: global
     # GOOGLE_PROJECT: myproject
     # GOOGLE_APPLICATION_CREDENTIALS: /vault/userconfig/myproject/myproject-creds.json
@@ -252,9 +252,9 @@ server:
   # extraVolumes is a list of extra volumes to mount. These will be exposed
   # to Vault in the path `/vault/userconfig/<name>/`. The value below is
   # an array of objects, examples are shown below.
-  extraVolumes: null
-#    - type: secret
-#      name: vault-ca
+  extraVolumes:
+    - type: secret
+      name: vault-ca
     # - type: secret (or "configMap")
     #   name: my-secret
     #   path: null # default is `/vault/userconfig`
@@ -543,4 +543,4 @@ ui:
   # of the annotations to apply to the ui service
   annotations:
     service.beta.kubernetes.io/aws-load-balancer-backend-protocol: ssl
-    external-dns.alpha.kubernetes.io/hostname: vault.singlespot.com
+    external-dns.alpha.kubernetes.io/hostname: vault-dev.singlespot.com
