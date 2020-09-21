@@ -1,0 +1,28 @@
+# Available parameters and their default values for the Vault chart.
+global:
+  # enabled is the master enabled switch. Setting this to true or false
+  # will enable or disable all the components within this chart by default.
+  enabled: true
+
+server:
+  enabled: false
+
+injector:
+  # True if you want to enable vault agent injection.
+  enabled: true
+
+  # External vault server address for the injector to use. Setting this will
+  # disable deployment of a vault server along with the injector.
+  externalVaultAddr: "https://vault.singlespot.com"
+
+  # Mount Path of the Vault Kubernetes Auth Method.
+  authPath: "auth/eks-preprod"
+
+  resources: {}
+  # resources:
+  #   requests:
+  #     memory: 256Mi
+  #     cpu: 250m
+  #   limits:
+  #     memory: 256Mi
+  #     cpu: 250m
