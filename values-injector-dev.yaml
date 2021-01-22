@@ -4,6 +4,9 @@ global:
   # will enable or disable all the components within this chart by default.
   enabled: true
 
+server:
+  enabled: false
+
 injector:
   # True if you want to enable vault agent injection.
   enabled: true
