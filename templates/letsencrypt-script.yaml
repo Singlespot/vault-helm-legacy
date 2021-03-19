@@ -14,7 +14,7 @@ metadata:
   annotations:
     # This is what defines this resource as a hook. Without this line, the
     # job is considered part of the release.
-    "helm.sh/hook": pre-install
+    "helm.sh/hook": pre-install, pre-upgrade
     "helm.sh/hook-weight": "-10"
     "helm.sh/hook-delete-policy": before-hook-creation
 data:
@@ -30,6 +30,7 @@ data:
         SECRET_NAME = os.environ['SECRET_NAME']
         NAMESPACE = os.environ['NAMESPACE']
         CERT_DIR = os.environ['CERT_DIR']
+        STATEFULSET = os.environ['STATEFULSET']
         metadata = {'name': SECRET_NAME, 'namespace': NAMESPACE}
         with open(os.path.join(CERT_DIR, 'fullchain.pem'), 'rb') as f:
             crt = base64.b64encode(f.read()).decode()
@@ -43,6 +44,10 @@ data:
             api_response = v1.create_namespaced_secret(NAMESPACE, body)
         except Exception:  # Conflict
             api_response = v1.patch_namespaced_secret(SECRET_NAME, NAMESPACE, body)
+        # Restart pods (by deleting them)
+        for pod in v1.list_namespaced_pod(NAMESPACE).items:
+            if pod.metadata.owner_references and any(ref.name == STATEFULSET for ref in pod.metadata.owner_references):
+                api_response = v1.delete_namespaced_pod(pod.metadata.name, NAMESPACE)
 
 
     if __name__ == '__main__':
