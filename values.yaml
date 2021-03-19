@@ -626,6 +626,9 @@ ui:
   # balancer (for supported K8S installations) to access the UI.
   enabled: true
   serviceType: "LoadBalancer"
+#  publishNotReadyAddresses: true
+#  # The service should only contain selectors for active Vault pod
+#  activeVaultPodOnly: false
   serviceNodePort: null
   externalPort: 443
 
