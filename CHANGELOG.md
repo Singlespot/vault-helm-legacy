@@ -1,7 +1,38 @@
 ## Unreleased
 
+Bugs:
+* Injector: fix labels for default anti-affinity rule [GH-441](https://github.com/hashicorp/vault-helm/pull/441), [GH-442](https://github.com/hashicorp/vault-helm/pull/442)
+* Set VAULT_DEV_LISTEN_ADDRESS in dev mode [GH-446](https://github.com/hashicorp/vault-helm/pull/446)
+
+## 0.9.0 (January 5th, 2021)
+
+Features:
+* Injector now supports configurable number of replicas [GH-436](https://github.com/hashicorp/vault-helm/pull/436)
+* Injector now supports auto TLS for multiple replicas using leader elections [GH-436](https://github.com/hashicorp/vault-helm/pull/436)
+
+Improvements:
+* Dev mode now supports `server.extraArgs` [GH-421](https://github.com/hashicorp/vault-helm/pull/421)
+* Dev mode root token is now configurable with `server.dev.devRootToken` [GH-415](https://github.com/hashicorp/vault-helm/pull/415)
+* ClusterRoleBinding updated to `v1` [GH-395](https://github.com/hashicorp/vault-helm/pull/395)
+* MutatingWebhook updated to `v1` [GH-408](https://github.com/hashicorp/vault-helm/pull/408)
+* Injector service now supports `injector.service.annotations` [425](https://github.com/hashicorp/vault-helm/pull/425)
+* Injector now supports `injector.extraLabels` [428](https://github.com/hashicorp/vault-helm/pull/428)
+* Added `allowPrivilegeEscalation: false` to Vault and Injector containers [429](https://github.com/hashicorp/vault-helm/pull/429)
+* Network Policy now supports `server.networkPolicy.egress` [389](https://github.com/hashicorp/vault-helm/pull/389)
+
+## 0.8.0 (October 20th, 2020)
+
 Improvements:
 * Make server NetworkPolicy independent of OpenShift [GH-381](https://github.com/hashicorp/vault-helm/pull/381)
+* Added configurables for all probe values [GH-387](https://github.com/hashicorp/vault-helm/pull/387)
+* MountPath for audit and data storage is now configurable [GH-393](https://github.com/hashicorp/vault-helm/pull/393)
+* Annotations can now be added to the Injector pods [GH-394](https://github.com/hashicorp/vault-helm/pull/394)
+* The injector can now be configured with a failurePolicy [GH-400](https://github.com/hashicorp/vault-helm/pull/400)
+* Added additional environment variables for rendering within Vault config [GH-398](https://github.com/hashicorp/vault-helm/pull/398)
+* Service account for Vault K8s auth is automatically created when `injector.externalVaultAddr` is set [GH-392](https://github.com/hashicorp/vault-helm/pull/392)
+
+Bugs:
+* Fixed install output using Helm V2 command [GH-378](https://github.com/hashicorp/vault-helm/pull/378)
 
 ## 0.7.0 (August 24th, 2020)
 
@@ -105,7 +136,7 @@ Features:
 
 * Extra containers can now be added to the Vault pods
 * Added configurability of pod probes
-* Added Vault Agent Injector 
+* Added Vault Agent Injector
 
 Improvements:
 
@@ -159,21 +190,21 @@ Features:
 
 * Added `extraSecretEnvironmentVars` to allow users to mount secrets as
   environment variables
-* Added `tlsDisable` configurable to change HTTP protocols from HTTP/HTTPS 
+* Added `tlsDisable` configurable to change HTTP protocols from HTTP/HTTPS
   depending on the value
-* Added `serviceNodePort` to configure a NodePort value when setting `serviceType` 
+* Added `serviceNodePort` to configure a NodePort value when setting `serviceType`
   to "NodePort"
 
 Improvements:
 
 * Changed UI port to 8200 for better HTTP protocol support
-* Added `path` to `extraVolumes` to define where the volume should be 
+* Added `path` to `extraVolumes` to define where the volume should be
   mounted.  Defaults to `/vault/userconfig`
 * Upgraded Vault to 1.2.2
 
 Bugs:
 
-* Fixed bug where upgrade would fail because immutable labels were being 
+* Fixed bug where upgrade would fail because immutable labels were being
   changed (Helm Version label)
 * Fixed bug where UI service used wrong selector after updating helm labels
 * Added `VAULT_API_ADDR` env to Vault pod to fixed bug where Vault thinks

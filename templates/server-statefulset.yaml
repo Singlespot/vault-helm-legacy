@@ -78,8 +78,14 @@ spec:
           {{ template "vault.resources" . }}
           image: {{ .Values.server.image.repository }}:{{ .Values.server.image.tag | default "latest" }}
           imagePullPolicy: {{ .Values.server.image.pullPolicy }}
-          command: {{ template "vault.command" . }}
+          command:
+          - "/bin/sh"
+          - "-ec"
           args: {{ template "vault.args" . }}
+          {{- if not .Values.global.openshift }}
+          securityContext:
+            allowPrivilegeEscalation: false
+          {{- end }}
           env:
             - name: HOST_IP
               valueFrom:
@@ -193,22 +199,6 @@ spec:
                 - {{ . | quote }}
                 {{- end }}
             {{- end }}
-{{/*        {{- if .Values.server.letsencrypt.enabled }}*/}}
-{{/*        - name: letsencrypt*/}}
-{{/*          image: certbot/dns-ovh:v1.8.0*/}}
-{{/*          imagePullPolicy: {{ .Values.server.image.pullPolicy }}*/}}
-{{/*          command:*/}}
-{{/*            - sleep*/}}
-{{/*          args:*/}}
-{{/*            - "6000"*/}}
-{{/*          env: []*/}}
-{{/*          volumeMounts:*/}}
-{{/*            - name: vault-letsencrypt*/}}
-{{/*              mountPath: /opt/letsencrypt*/}}
-{{/*            - name: letsencrypt-ovhapi*/}}
-{{/*              readOnly: true*/}}
-{{/*              mountPath: /root/*/}}
-{{/*        {{- end }}*/}}
         {{- if .Values.server.extraContainers }}
           {{ toYaml .Values.server.extraContainers | nindent 8}}
         {{- end }}

@@ -28,10 +28,10 @@ spec:
         app.kubernetes.io/instance: {{ .Release.Name | quote }}
         helm.sh/chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
     spec:
-      serviceAccountName: {{ template "vault.serviceAccount.name" . }}
+      serviceAccountName: {{ template "vault.fullname" . }}
       containers:
       - name: create-certificate-secret
-        image: certbot/dns-ovh:v1.8.0
+        image: certbot/dns-ovh:v1.13.0
         imagePullPolicy: {{ .Values.server.image.pullPolicy }}
         command:
           - /bin/sh
@@ -55,6 +55,8 @@ spec:
             value: {{ .Values.server.letsencrypt.secretName }}
           - name: CERT_DIR
             value: {{ .Values.server.letsencrypt.baseDir }}/config/live/{{ index .Values.ui.annotations "external-dns.alpha.kubernetes.io/hostname" }}
+          - name: STATEFULSET
+            value: {{ template "vault.fullname" . }}
         volumeMounts:
           - name: letsencrypt-script
             mountPath: /root/script/

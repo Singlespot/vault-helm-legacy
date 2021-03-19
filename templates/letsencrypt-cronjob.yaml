@@ -12,7 +12,7 @@ metadata:
     app.kubernetes.io/managed-by: {{ .Release.Service }}
   {{- template "vault.statefulSet.annotations" . }}
 spec:
-  schedule: '* * 1 * *'
+  schedule: '0 10 1 * *'
   jobTemplate:
     metadata:
       labels:
@@ -28,7 +28,7 @@ spec:
       template:
         spec:
           restartPolicy: Never
-          serviceAccountName: {{ template "vault.serviceAccount.name" . }}
+          serviceAccountName: {{ template "vault.fullname" . }}
           volumes:
             - name: letsencrypt-script
               configMap:
@@ -42,7 +42,7 @@ spec:
                 claimName: vault-letsencrypt
           containers:
             - name: letsencrypt-cronjob
-              image: certbot/dns-ovh:v1.8.0
+              image: certbot/dns-ovh:v1.13.0
               imagePullPolicy: {{ .Values.server.image.pullPolicy }}
               command:
                 - /bin/sh
@@ -66,6 +66,8 @@ spec:
                   value: {{ .Values.server.letsencrypt.secretName }}
                 - name: CERT_DIR
                   value: {{ .Values.server.letsencrypt.baseDir }}/config/live/{{ index .Values.ui.annotations "external-dns.alpha.kubernetes.io/hostname" }}
+                - name: STATEFULSET
+                  value: {{ template "vault.fullname" . }}
               volumeMounts:
                 - name: letsencrypt-script
                   readOnly: true
