@@ -199,22 +199,6 @@ spec:
                 - {{ . | quote }}
                 {{- end }}
             {{- end }}
-{{/*        {{- if .Values.server.letsencrypt.enabled }}*/}}
-{{/*        - name: letsencrypt*/}}
-{{/*          image: certbot/dns-ovh:v1.8.0*/}}
-{{/*          imagePullPolicy: {{ .Values.server.image.pullPolicy }}*/}}
-{{/*          command:*/}}
-{{/*            - sleep*/}}
-{{/*          args:*/}}
-{{/*            - "6000"*/}}
-{{/*          env: []*/}}
-{{/*          volumeMounts:*/}}
-{{/*            - name: vault-letsencrypt*/}}
-{{/*              mountPath: /opt/letsencrypt*/}}
-{{/*            - name: letsencrypt-ovhapi*/}}
-{{/*              readOnly: true*/}}
-{{/*              mountPath: /root/*/}}
-{{/*        {{- end }}*/}}
         {{- if .Values.server.extraContainers }}
           {{ toYaml .Values.server.extraContainers | nindent 8}}
         {{- end }}
